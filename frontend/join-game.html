@@ -1,0 +1,126 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Join a Game - SyncThink</title>
+  <link rel="stylesheet" href="/src/style.css" />
+  <style>
+    /* Styles spécifiques à cette page */
+    body {
+      background-color: var(--light-purple);
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      min-height: 100vh;
+      margin: 0;
+    }
+    
+    .join-container {
+      background-color: white;
+      padding: 2rem;
+      border-radius: 15px;
+      box-shadow: 0 10px 25px rgba(0, 0, 0, 0.1);
+      width: 90%;
+      max-width: 500px;
+      text-align: center;
+      border: 2px solid black;
+    }
+    
+    h1 {
+      color: var(--dark-text);
+      margin-bottom: 1.5rem;
+      font-size: 2.5rem;
+    }
+    
+    #gameIdInput {
+      width: 100%;
+      padding: 15px;
+      margin-bottom: 1.5rem;
+      border: 2px solid black;
+      border-radius: 8px;
+      font-size: 1.2rem;
+      text-align: center;
+    }
+    
+    #submitJoin {
+      background-color: var(--purple);
+      color: black;
+      border: 2px solid black;
+      padding: 15px 30px;
+      font-size: 1.2rem;
+      font-weight: bold;
+      border-radius: 8px;
+      cursor: pointer;
+      transition: all 0.3s ease;
+      width: 100%;
+    }
+    
+    #submitJoin:hover {
+      transform: translateY(-3px);
+      box-shadow: 0 5px 15px rgba(0, 0, 0, 0.2);
+    }
+  </style>
+</head>
+<body>
+  <div class="join-container">
+    <h1>JOIN A GAME</h1>
+    <input type="text" id="gameIdInput" placeholder="Enter Game ID" />
+    <button id="submitJoin">JOIN NOW</button>
+  </div>
+
+  <script>
+    document.addEventListener('DOMContentLoaded', () => {
+      const submitBtn = document.getElementById("submitJoin");
+      const gameIdInput = document.getElementById("gameIdInput");
+      
+      // Gestion du clic sur le bouton
+      submitBtn.addEventListener("click", async () => {
+        const gameId = gameIdInput.value.trim();
+
+        if (!gameId) {
+          alert("Please enter a valid game ID.");
+          return;
+        }
+
+        try {
+          submitBtn.disabled = true;
+          submitBtn.textContent = "Loading...";
+          
+          const response = await fetch(`http://localhost:3000/api/join-game/${encodeURIComponent(gameId)}`, {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json'
+            }
+          });
+
+          if (!response.ok) {
+            const errorData = await response.json();
+            throw new Error(errorData.error || "Failed to join game");
+          }
+
+          const data = await response.json();
+          console.log("Successfully joined:", data);
+
+          // Dans le script existant, modifie l'URL de redirection :
+        window.location.href = `/game.html?gameId=${encodeURIComponent(gameId)}&playerId=${encodeURIComponent(data.playerId)}`;     
+
+        } catch (error) {
+          console.error("Error joining game:", error);
+          alert(error.message || "An error occurred. Please check console.");
+        } finally {
+          submitBtn.disabled = false;
+          submitBtn.textContent = "JOIN NOW";
+        }
+      });
+      
+      // Permettre aussi la soumission avec Enter
+      gameIdInput.addEventListener('keypress', (e) => {
+        if (e.key === 'Enter') {
+          submitBtn.click();
+        }
+      });
+    });
+  </script>
+</body>
+</html>

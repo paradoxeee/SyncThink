@@ -1,0 +1,199 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="description" content="SyncThink - Un jeu de synchronisation d'idées en temps réel">
+  <meta name="theme-color" content="#6B46C1">
+  <link rel="icon" href="/favicon.ico">
+  <title>SyncThink - Game Room</title>
+  <link rel="stylesheet" href="/src/style.css">
+  <style>
+
+
+    .success {
+      color: var(--green);
+    }
+    .fail {
+      color: var(--red);
+    }
+    .answers, .scores {
+      margin: 1rem 0;
+      padding: 1rem;
+      background: #f5f5f5;
+      border-radius: 8px;
+    }
+
+    /* Styles spécifiques à la page de jeu */
+    #game-container {
+      background-color: white;
+      border: 3px solid black;
+      border-radius: 20px;
+      width: 100%;
+      max-width: 800px;
+      padding: 2rem;
+      box-shadow: 0 10px 30px rgba(0, 0, 0, 0.15);
+      margin: 1rem auto;
+    }
+
+    #room-id-display {
+      background-color: var(--yellow);
+      padding: 0.5rem 1rem;
+      border-radius: 20px;
+      border: 2px solid black;
+      font-weight: bold;
+      display: inline-block;
+      margin-bottom: 1rem;
+    }
+
+    #question-display {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 1rem;
+      padding: 1.5rem;
+      background-color: var(--light-purple);
+      border-radius: 10px;
+      border: 2px dashed black;
+      margin: 1rem 0;
+    }
+
+    #answer-form {
+      display: flex;
+      flex-direction: column;
+      gap: 1rem;
+      width: 100%;
+      max-width: 500px;
+    }
+
+    #answer-input {
+      width: 100%;
+      padding: 12px;
+      font-size: 1.1rem;
+      border: 2px solid black;
+      border-radius: 8px;
+      text-align: center;
+    }
+
+    #submit-btn {
+      background-color: var(--purple);
+      color: black;
+      border: 3px solid black;
+      padding: 12px;
+      font-size: 1.2rem;
+      font-weight: bold;
+      border-radius: 8px;
+      cursor: pointer;
+      transition: all 0.3s ease;
+    }
+
+    #submit-btn:hover:not(:disabled) {
+      transform: translateY(-3px);
+      box-shadow: 0 5px 15px rgba(0, 0, 0, 0.2);
+    }
+
+    #submit-btn:disabled {
+      opacity: 0.7;
+      cursor: not-allowed;
+    }
+
+    #timer {
+      font-size: 1.5rem;
+      font-weight: bold;
+      margin-top: 1rem;
+    }
+
+    #timer.warning {
+      color: #ff4444;
+      animation: pulse 1s infinite;
+    }
+
+    @keyframes pulse {
+      0% { opacity: 1; }
+      50% { opacity: 0.5; }
+      100% { opacity: 1; }
+    }
+
+    #players-display {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+      gap: 1rem;
+      margin: 1.5rem 0;
+    }
+
+    .player-card {
+      background-color: white;
+      border: 2px solid black;
+      border-radius: 10px;
+      padding: 1rem;
+      text-align: center;
+    }
+
+    .player-card.current-player {
+      border-color: var(--purple);
+    }
+
+    .player-card.ready {
+      border-color: var(--green);
+    }
+
+    #results-display {
+      background-color: white;
+      border: 2px solid black;
+      border-radius: 10px;
+      padding: 1.5rem;
+      margin-top: 1.5rem;
+    }
+
+    .hidden {
+      display: none !important;
+    }
+  </style>
+</head>
+<body>
+  <div id="game-container">
+    <h1>SYNCTHINK CHALLENGE</h1>
+    
+    <div id="room-id-display">
+      ROOM ID: <span id="room-id"></span>
+      <button id="copy-btn" aria-label="Copier l'ID">📋</button>
+    </div>
+
+    <div id="game-state">
+      <div id="waiting-message">
+        <p>En attente d'un deuxième joueur...</p>
+        <div class="loading-spinner" role="status" aria-label="Chargement"></div>
+      </div>
+    </div>
+
+    <div id="question-display" class="hidden">
+      <div class="round-info">
+        Round <span id="round-number">1</span>/<span id="max-rounds">5</span>
+      </div>
+      <h2 id="current-question"></h2>
+      <form id="answer-form" autocomplete="off">
+        <input 
+          type="text" 
+          id="answer-input" 
+          placeholder="Votre réponse..." 
+          required
+          aria-label="Votre réponse"
+          maxlength="100"
+        >
+        <button type="submit" id="submit-btn">SOUMETTRE</button>
+      </form>
+      <div id="timer" role="timer" aria-live="polite">30s</div>
+    </div>
+
+    <div id="players-display" role="region" aria-label="Liste des joueurs"></div>
+
+    <div id="results-display" class="hidden" role="region" aria-label="Résultats"></div>
+  </div>
+
+  <script type="module">
+    import { io } from 'socket.io-client';
+    window.io = io;
+  </script>
+  <script type="module" src="/src/game.js"></script>
+</body>
+</html>
