@@ -76,7 +76,6 @@ app.post("/api/join-game/:id", (req, res) => {
   }
 
   const playerId = uuidv4().slice(0, 8);
-  console.log(`👤 Nouveau joueur ${playerId} rejoint la partie ${gameId}`);
   
   res.json({ 
     success: true, 
@@ -130,6 +129,7 @@ io.on('connection', (socket) => {
     console.log(`👥 Joueur ${username} (${playerId}) a rejoint la partie ${gameId}`);
     updateGameState(gameId);
     
+    // Démarrer le jeu si 2 joueurs sont connectés
     if (game.players.length === 2 && game.status === 'waiting') {
       setTimeout(() => startGameRound(gameId), 2000);
     }
@@ -144,11 +144,6 @@ io.on('connection', (socket) => {
       return;
     }
     
-    if (!answer || answer.trim() === '') {
-      socket.emit('error', { message: 'Réponse vide' });
-      return;
-    }
-    
     game.answers[playerId] = answer.trim();
     
     const player = game.players.find(p => p.id === playerId);
@@ -159,6 +154,7 @@ io.on('connection', (socket) => {
     
     updateGameState(gameId);
     
+    // Vérifier si tous les joueurs ont répondu
     const connectedPlayers = game.players.filter(p => p.connected);
     if (Object.keys(game.answers).length === connectedPlayers.length) {
       clearInterval(game.timerInterval);
@@ -180,6 +176,7 @@ io.on('connection', (socket) => {
         
         updateGameState(gameId);
         
+        // Nettoyer les parties inactives après 30 secondes
         setTimeout(() => {
           const connectedPlayers = game.players.filter(p => p.connected);
           if (connectedPlayers.length === 0) {
@@ -212,11 +209,12 @@ function updateGameState(gameId) {
 }
 
 function getRandomQuestion(game) {
-  const availableQuestions = questions.filter(q => !game.usedQuestions.includes(q));
-  if (availableQuestions.length === 0) {
+  // Réinitialiser les questions utilisées si nécessaire
+  if (game.usedQuestions.length >= questions.length) {
     game.usedQuestions = [];
-    return questions[Math.floor(Math.random() * questions.length)];
   }
+
+  const availableQuestions = questions.filter(q => !game.usedQuestions.includes(q));
   return availableQuestions[Math.floor(Math.random() * availableQuestions.length)];
 }
 
@@ -224,21 +222,20 @@ function startGameRound(gameId) {
   const game = games[gameId];
   if (!game || game.round >= game.maxRounds) return;
 
-  // Nettoyer le timer précédent
-  if (game.timerInterval) {
-    clearInterval(game.timerInterval);
-  }
-
-  game.round++;
-  game.status = 'playing';
+  // Nettoyer l'état précédent
+  clearInterval(game.timerInterval);
   game.answers = {};
   game.players.forEach(p => p.ready = false);
 
+  // Passer au round suivant
+  game.round++;
+  game.status = 'playing';
   game.currentQuestion = getRandomQuestion(game);
   game.usedQuestions.push(game.currentQuestion);
 
-  console.log(`Début round ${game.round} - Question: ${game.currentQuestion}`);
+  console.log(`🔄 Début round ${game.round}/${game.maxRounds} - Question: "${game.currentQuestion}"`);
 
+  // Envoyer les données du nouveau round à tous les joueurs
   io.to(gameId).emit('newRound', {
     question: game.currentQuestion,
     round: game.round,
@@ -246,6 +243,7 @@ function startGameRound(gameId) {
     timeLeft: 30
   });
 
+  // Démarrer le timer serveur
   startServerTimer(gameId);
 }
 
@@ -257,16 +255,21 @@ function startServerTimer(gameId) {
   game.timerInterval = setInterval(() => {
     timeLeft--;
     
+    // Mettre à jour tous les clients
     io.to(gameId).emit('timerUpdate', { timeLeft });
     
+    // Temps écoulé - calculer les résultats
     if (timeLeft <= 0) {
       clearInterval(game.timerInterval);
+      
+      // Enregistrer les réponses manquantes
       game.players.forEach(player => {
         if (!game.answers[player.id]) {
           game.answers[player.id] = "[Aucune réponse]";
           player.ready = true;
         }
       });
+      
       calculateResults(gameId);
     }
   }, 1000);
@@ -276,18 +279,17 @@ function calculateResults(gameId) {
   const game = games[gameId];
   if (!game || !game.answers) return;
 
-  console.log(`Calcul des résultats pour le round ${game.round}`);
-  console.log('Réponses:', game.answers);
-
   const answers = Object.entries(game.answers);
   let match = false;
   
+  // Vérifier la correspondance des réponses (seulement pour 2 joueurs)
   if (answers.length === 2) {
     const [answer1, answer2] = answers.map(([_, ans]) => ans.trim().toLowerCase());
     match = answer1 === answer2;
-    console.log(`Comparaison des réponses: "${answer1}" vs "${answer2}" => ${match}`);
+    console.log(`🔍 Résultats: "${answer1}" vs "${answer2}" => ${match ? 'MATCH' : 'NO MATCH'}`);
   }
 
+  // Mettre à jour les scores si match
   if (match) {
     answers.forEach(([playerId]) => {
       game.scores[playerId] = (game.scores[playerId] || 0) + 10;
@@ -296,8 +298,7 @@ function calculateResults(gameId) {
     });
   }
 
-  console.log(`Scores après calcul:`, game.scores);
-
+  // Envoyer les résultats aux joueurs
   io.to(gameId).emit('roundResults', {
     match,
     answers: game.answers,
@@ -306,8 +307,9 @@ function calculateResults(gameId) {
     isGameOver: game.round >= game.maxRounds
   });
 
+  // Passer au round suivant ou terminer le jeu
   if (game.round < game.maxRounds) {
-    setTimeout(() => startGameRound(gameId), 3000);
+    setTimeout(() => startGameRound(gameId), 5000);
   } else {
     endGame(gameId);
   }
@@ -320,12 +322,14 @@ function endGame(gameId) {
   game.status = 'finished';
   clearInterval(game.timerInterval);
   
+  // Déterminer le gagnant
   const sortedScores = Object.entries(game.scores).sort((a, b) => b[1] - a[1]);
   const [winnerId, winnerScore] = sortedScores[0] || ['', 0];
   const winner = game.players.find(p => p.id === winnerId);
   
-  console.log(`🏆 Fin de partie ${gameId}, gagnant:`, winner?.username);
+  console.log(`🏆 Fin de partie ${gameId}, gagnant: ${winner?.username || 'Inconnu'}`);
   
+  // Envoyer les résultats finaux
   io.to(gameId).emit('gameOver', {
     scores: game.scores,
     winner: winnerId,
@@ -333,6 +337,7 @@ function endGame(gameId) {
     finalScores: sortedScores
   });
 
+  // Nettoyer la partie après 1 minute
   setTimeout(() => {
     delete games[gameId];
     console.log(`🗑️ Partie ${gameId} nettoyée`);

@@ -1,6 +1,5 @@
-// game.js - Gestion principale du jeu SyncThink
+// game.js - Gestion principale du jeu SyncThink (version corrigée)
 
-// Configuration initiale
 document.addEventListener('DOMContentLoaded', () => {
   // Éléments DOM
   const roomIdElement = document.getElementById('room-id');
@@ -15,6 +14,8 @@ document.addEventListener('DOMContentLoaded', () => {
   const waitingMessage = document.getElementById('waiting-message');
   const timerElement = document.getElementById('timer');
   const copyButton = document.getElementById('copy-btn');
+  const roundNumberElement = document.getElementById('round-number');
+  const maxRoundsElement = document.getElementById('max-rounds');
 
   // Variables d'état
   let currentPlayers = [];
@@ -31,9 +32,9 @@ document.addEventListener('DOMContentLoaded', () => {
 
   // Validation des paramètres
   if (!gameId || !playerId) {
-      showError('Paramètres manquants dans l\'URL');
-      setTimeout(() => window.location.href = '/', 3000);
-      return;
+    showError('Paramètres manquants dans l\'URL');
+    setTimeout(() => window.location.href = '/', 3000);
+    return;
   }
 
   // Initialisation de l'interface
@@ -42,14 +43,12 @@ document.addEventListener('DOMContentLoaded', () => {
 
   function updateTimerDisplay() {
     if (!timerElement) return;
-    
     timerElement.textContent = `${serverTimeLeft}s`;
     timerElement.className = serverTimeLeft <= 10 ? 'warning' : '';
   }
 
   function startLocalTimer() {
     clearInterval(roundTimer);
-    
     roundTimer = setInterval(() => {
       serverTimeLeft--;
       updateTimerDisplay();
@@ -94,53 +93,45 @@ document.addEventListener('DOMContentLoaded', () => {
     });
 
     socket.on('newRound', (data) => {
-      console.log('Nouveau round:', data);
+      resetRoundState();
       serverTimeLeft = data.timeLeft;
       
-      // Réinitialiser l'interface
-      hasSubmittedAnswer = false;
-      document.getElementById('submit-btn').disabled = false;
-      document.getElementById('submit-btn').textContent = 'SOUMETTRE';
+      // Mettre à jour les informations du round
+      if (roundNumberElement) roundNumberElement.textContent = data.round;
+      if (maxRoundsElement) maxRoundsElement.textContent = data.maxRounds;
       
-      // Afficher les éléments
-      document.getElementById('question-display').classList.remove('hidden');
-      document.getElementById('results-display').classList.add('hidden');
-      document.getElementById('waiting-message').classList.add('hidden');
+      // Afficher la nouvelle question
+      if (currentQuestionElement) {
+        currentQuestionElement.innerHTML = `
+          <div class="round-info">Round ${data.round}/${data.maxRounds}</div>
+          <div class="question-text">${data.question}</div>
+        `;
+      }
+
+      // Afficher les éléments appropriés
+      questionDisplay.classList.remove('hidden');
+      resultsDisplay.classList.add('hidden');
+      waitingMessage.classList.add('hidden');
       
-      // Mettre à jour la question
-      document.getElementById('current-question').textContent = data.question;
-      document.getElementById('round-number').textContent = data.round;
-      document.getElementById('max-rounds').textContent = data.maxRounds;
+      // Réinitialiser le champ de réponse
+      if (answerInput) {
+        answerInput.value = '';
+        answerInput.disabled = false;
+        answerInput.focus();
+      }
       
-      // Focus sur le champ de réponse
-      const input = document.getElementById('answer-input');
-      input.value = '';
-      input.disabled = false;
-      input.focus();
-      
-      // Démarrer le timer local
+      // Démarrer le timer
       startLocalTimer();
     });
 
     socket.on('roundResults', (data) => {
-      updateScores(data.scores); // Mise à jour immédiate des scores
+      clearInterval(roundTimer);
+      updateScores(data.scores);
+      showRoundResults(data);
       
-      // Afficher les résultats
-      resultsDisplay.innerHTML = `
-        <h3 class="${data.match ? 'success' : 'fail'}">
-          ${data.match ? '🎉 +10 points!' : '❌ Pas de match...'}
-        </h3>
-        <div class="answers">
-          ${Object.entries(data.answers).map(([id, answer]) => `
-            <p><strong>${getPlayerName(id)}:</strong> ${answer}</p>
-          `).join('')}
-        </div>
-        <div class="scores">
-          ${Object.entries(data.scores).map(([id, score]) => `
-            <p>${getPlayerName(id)}: ${score} points</p>
-          `).join('')}
-        </div>
-      `;
+      // Cacher la question et afficher les résultats
+      questionDisplay.classList.add('hidden');
+      resultsDisplay.classList.remove('hidden');
     });
 
     socket.on('timerUpdate', (data) => {
@@ -155,34 +146,6 @@ document.addEventListener('DOMContentLoaded', () => {
 
   function getPlayerName(playerId) {
     return currentPlayers.find(p => p.id === playerId)?.username || `Joueur ${playerId.slice(0, 4)}`;
-  }
-
-  function startNewRound(data) {
-    resetRoundState();
-    serverTimeLeft = data.timeLeft || 30;
-    
-    // Affichage de la question
-    if (currentQuestionElement) {
-      currentQuestionElement.innerHTML = `
-        <div class="round-info">Round ${data.round}/${data.maxRounds}</div>
-        <div class="question-text">${data.question}</div>
-      `;
-    }
-
-    // Affichage des éléments
-    toggleElement(questionDisplay, true);
-    toggleElement(resultsDisplay, false);
-    toggleElement(waitingMessage, false);
-
-    // Focus sur l'input
-    if (answerInput) {
-      answerInput.value = '';
-      answerInput.disabled = false;
-      answerInput.focus();
-    }
-
-    // Démarrer le timer
-    startLocalTimer();
   }
 
   function submitAnswer(e) {
@@ -237,10 +200,6 @@ document.addEventListener('DOMContentLoaded', () => {
   }
 
   function showRoundResults(data) {
-    clearInterval(roundTimer);
-    toggleElement(questionDisplay, false);
-    toggleElement(resultsDisplay, true);
-    
     const matchMessage = data.match ? 
       '🎉 SYNCHRONISATION RÉUSSIE ! (+10 points)' : 
       '❌ Pas de match cette fois...';
@@ -354,11 +313,6 @@ document.addEventListener('DOMContentLoaded', () => {
   }
 
   // Fonctions utilitaires
-  function toggleElement(element, show) {
-    if (!element) return;
-    element.style.display = show ? 'block' : 'none';
-  }
-
   function showToast(message, type = 'info') {
     const toast = document.createElement('div');
     toast.className = `toast ${type}`;
@@ -383,12 +337,10 @@ document.addEventListener('DOMContentLoaded', () => {
     if (socket) socket.disconnect();
   });
 
-  // Fonctions principales
   function initInterface() {
     if (roomIdElement) roomIdElement.textContent = gameId;
     if (shareIdElement) shareIdElement.textContent = gameId;
     
-    // Gestion du bouton copier
     if (copyButton) {
       copyButton.addEventListener('click', () => {
         navigator.clipboard.writeText(gameId);
@@ -396,7 +348,6 @@ document.addEventListener('DOMContentLoaded', () => {
       });
     }
 
-    // Gestion du formulaire
     const answerForm = document.getElementById('answer-form');
     if (answerForm) {
       answerForm.addEventListener('submit', submitAnswer);
@@ -404,20 +355,17 @@ document.addEventListener('DOMContentLoaded', () => {
   }
 
   function connectToGame() {
-    // Récupération du pseudo
     let username = localStorage.getItem(`syncThink_${gameId}_username`);
     if (!username) {
       username = prompt("Choisis ton pseudo:") || `Joueur ${playerId.slice(0, 4)}`;
       localStorage.setItem(`syncThink_${gameId}_username`, username);
     }
 
-    // Connexion Socket.IO
     socket = io('http://localhost:3000', {
       reconnectionAttempts: 5,
       reconnectionDelay: 1000
     });
 
-    // Gestion des erreurs
     socket.on('connect_error', (error) => {
       showError('Erreur de connexion au serveur');
       console.error('Erreur Socket.IO:', error);
@@ -430,10 +378,7 @@ document.addEventListener('DOMContentLoaded', () => {
       }
     });
 
-    // Rejoindre la partie
     socket.emit('joinGame', { gameId, playerId, username });
-
-    // Écoute des événements
     setupSocketListeners();
   }
 });
