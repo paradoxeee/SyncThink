@@ -361,10 +361,10 @@ document.addEventListener('DOMContentLoaded', () => {
       localStorage.setItem(`syncThink_${gameId}_username`, username);
     }
 
-    socket = io('http://localhost:3000', {
-      reconnectionAttempts: 5,
-      reconnectionDelay: 1000
-    });
+    socket = io(import.meta.env.VITE_API_URL || 'http://localhost:3000', {
+  reconnectionAttempts: 5,
+  reconnectionDelay: 1000
+});
 
     socket.on('connect_error', (error) => {
       showError('Erreur de connexion au serveur');
