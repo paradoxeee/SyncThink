@@ -92,12 +92,15 @@
 <body>
   <div class="join-container">
     <h1>JOIN A GAME</h1>
-    <input type="text" id="gameIdInput" placeholder="Enter Game ID" />
-    <button id="submitJoin">JOIN NOW</button>
+    <div class="join-form">
+      <input type="text" id="game-id" placeholder="Entrez l'ID de la partie" required>
+      <input type="text" id="username" placeholder="Entrez votre pseudo" required>
+      <button id="join-btn">Rejoindre la partie</button>
+    </div>
   </div>
 
   <script type="module">
-    import config from '/src/config.js';
+    import socketHandler from './src/socket-handler.js';
 
     function showToast(message, type = "info") {
       const toast = document.createElement("div");
@@ -119,56 +122,53 @@
     }
 
     document.addEventListener('DOMContentLoaded', () => {
-      const submitBtn = document.getElementById("submitJoin");
-      const gameIdInput = document.getElementById("gameIdInput");
+      const submitBtn = document.getElementById("join-btn");
+      const gameIdInput = document.getElementById("game-id");
+      const usernameInput = document.getElementById("username");
       
       // Gestion du clic sur le bouton
       submitBtn.addEventListener("click", async () => {
-        const gameId = gameIdInput.value.trim().toUpperCase();
+        const gameId = gameIdInput.value.trim();
+        const username = usernameInput.value.trim();
 
-        if (!gameId) {
-          showToast("Please enter a valid game ID.", "warning");
+        if (!gameId || !username) {
+          showToast("Veuillez remplir tous les champs", "error");
           return;
         }
 
+        // Désactiver le bouton pendant le chargement
+        submitBtn.disabled = true;
+        submitBtn.innerHTML = `
+          <span class="spinner"></span> Loading...
+        `;
+
         try {
-          submitBtn.disabled = true;
-          submitBtn.innerHTML = `
-            <span class="spinner"></span> Loading...
-          `;
-          
-          const response = await fetch(`${config.backendUrl}/api/join-game/${encodeURIComponent(gameId)}`, {
+          // Appel à l'API pour rejoindre la partie
+          const response = await fetch(`/api/games/${gameId}/join`, {
             method: 'POST',
             headers: {
               'Content-Type': 'application/json'
-            }
+            },
+            body: JSON.stringify({ username })
           });
 
           if (!response.ok) {
-            const errorData = await response.json();
-            throw new Error(errorData.error || "Failed to join game");
+            throw new Error('Failed to join game');
           }
 
           const data = await response.json();
-          console.log("Successfully joined:", data);
-
-          // Stockage local
-          try {
-            localStorage.setItem(`syncThink_${gameId}_player`, data.playerId);
-            localStorage.setItem("lastGameId", gameId);
-          } catch (e) {
-            console.warn("Erreur stockage local:", e);
-          }
-
-          // Redirection
-          window.location.href = `/game.html?gameId=${encodeURIComponent(gameId)}&playerId=${encodeURIComponent(data.playerId)}`;
-
+          
+          // Stocker les informations du joueur
+          localStorage.setItem('playerId', data.playerId);
+          localStorage.setItem('username', username);
+          localStorage.setItem('lastGameId', gameId);
+          
+          // Rediriger vers la page de jeu
+          window.location.href = `/game.html?gameId=${gameId}&playerId=${data.playerId}`;
         } catch (error) {
-          console.error("Error joining game:", error);
-          showToast(error.message || "An error occurred", "error");
-        } finally {
+          showToast(error.message, "error");
           submitBtn.disabled = false;
-          submitBtn.textContent = "JOIN NOW";
+          submitBtn.textContent = "Rejoindre la partie";
         }
       });
       
@@ -178,6 +178,15 @@
           submitBtn.click();
         }
       });
+
+      // Exposer les fonctions UI pour le backend
+      window.joinGameUI = {
+        showToast,
+        resetButton: () => {
+          submitBtn.disabled = false;
+          submitBtn.textContent = "Rejoindre la partie";
+        }
+      };
     });
   </script>
 </body>
