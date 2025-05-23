@@ -60,6 +60,33 @@
       transform: translateY(-3px);
       box-shadow: 0 5px 15px rgba(0, 0, 0, 0.2);
     }
+
+    /* Styles pour les toasts */
+    .toast {
+      position: fixed;
+      bottom: 20px;
+      left: 50%;
+      transform: translateX(-50%);
+      padding: 12px 24px;
+      border-radius: 8px;
+      color: white;
+      font-weight: bold;
+      z-index: 1000;
+      opacity: 0;
+      transition: opacity 0.3s, transform 0.3s;
+      max-width: 80vw;
+      word-wrap: break-word;
+      text-align: center;
+      box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+    }
+    .toast.show {
+      opacity: 1;
+      transform: translateX(-50%) translateY(-10px);
+    }
+    .toast.error { background: #ff4444; }
+    .toast.success { background: #00C851; }
+    .toast.warning { background: #ffbb33; color: black; }
+    .toast.info { background: #33b5e5; }
   </style>
 </head>
 <body>
@@ -69,25 +96,48 @@
     <button id="submitJoin">JOIN NOW</button>
   </div>
 
-  <script>
+  <script type="module">
+    import config from '/src/config.js';
+
+    function showToast(message, type = "info") {
+      const toast = document.createElement("div");
+      toast.className = `toast ${type}`;
+      toast.textContent = message;
+      document.body.appendChild(toast);
+
+      // Nettoyer les anciens toasts
+      const oldToasts = document.querySelectorAll('.toast:not(.show)');
+      oldToasts.forEach(t => t.remove());
+
+      setTimeout(() => {
+        toast.classList.add("show");
+        setTimeout(() => {
+          toast.classList.remove("show");
+          setTimeout(() => toast.remove(), 300);
+        }, 3000);
+      }, 10);
+    }
+
     document.addEventListener('DOMContentLoaded', () => {
       const submitBtn = document.getElementById("submitJoin");
       const gameIdInput = document.getElementById("gameIdInput");
       
       // Gestion du clic sur le bouton
       submitBtn.addEventListener("click", async () => {
-        const gameId = gameIdInput.value.trim();
+        const gameId = gameIdInput.value.trim().toUpperCase();
 
         if (!gameId) {
-          alert("Please enter a valid game ID.");
+          showToast("Please enter a valid game ID.", "warning");
           return;
         }
 
         try {
           submitBtn.disabled = true;
-          submitBtn.textContent = "Loading...";
+          submitBtn.innerHTML = `
+            <span class="spinner"></span> Loading...
+          `;
           
-          const response = await fetch(`http://localhost:3000/api/join-game/${encodeURIComponent(gameId)}`, {
+          const response = await fetch(`${config.backendUrl}/api/join-game/${encodeURIComponent(gameId)}`, {
             method: 'POST',
             headers: {
               'Content-Type': 'application/json'
@@ -102,12 +152,20 @@
           const data = await response.json();
           console.log("Successfully joined:", data);
 
-          // Dans le script existant, modifie l'URL de redirection :
-        window.location.href = `/game.html?gameId=${encodeURIComponent(gameId)}&playerId=${encodeURIComponent(data.playerId)}`;     
+          // Stockage local
+          try {
+            localStorage.setItem(`syncThink_${gameId}_player`, data.playerId);
+            localStorage.setItem("lastGameId", gameId);
+          } catch (e) {
+            console.warn("Erreur stockage local:", e);
+          }
+
+          // Redirection
+          window.location.href = `/game.html?gameId=${encodeURIComponent(gameId)}&playerId=${encodeURIComponent(data.playerId)}`;
 
         } catch (error) {
           console.error("Error joining game:", error);
-          alert(error.message || "An error occurred. Please check console.");
+          showToast(error.message || "An error occurred", "error");
         } finally {
           submitBtn.disabled = false;
           submitBtn.textContent = "JOIN NOW";
