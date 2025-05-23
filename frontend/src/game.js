@@ -361,7 +361,7 @@ document.addEventListener('DOMContentLoaded', () => {
       localStorage.setItem(`syncThink_${gameId}_username`, username);
     }
 
-    socket = io(import.meta.env.VITE_API_URL || 'http://localhost:3000', {
+    socket = io('https://syncthink.onrender.com', {
   reconnectionAttempts: 5,
   reconnectionDelay: 1000
 });
