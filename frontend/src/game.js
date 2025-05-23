@@ -1,4 +1,5 @@
 // game.js - Gestion principale du jeu SyncThink (version corrigée)
+import config from './config.js';
 
 document.addEventListener('DOMContentLoaded', () => {
   // Éléments DOM
@@ -355,30 +356,22 @@ document.addEventListener('DOMContentLoaded', () => {
   }
 
   function connectToGame() {
-    let username = localStorage.getItem(`syncThink_${gameId}_username`);
-    if (!username) {
-      username = prompt("Choisis ton pseudo:") || `Joueur ${playerId.slice(0, 4)}`;
-      localStorage.setItem(`syncThink_${gameId}_username`, username);
-    }
+    socket = io(config.backendUrl, {
+      transports: ['websocket'],
+      reconnection: true,
+      reconnectionAttempts: 5
+    });
 
-    socket = io('https://syncthink.onrender.com', {
-  reconnectionAttempts: 5,
-  reconnectionDelay: 1000
-});
+    socket.on('connect', () => {
+      console.log('Connecté au serveur');
+      socket.emit('joinGame', { gameId, playerId });
+    });
 
     socket.on('connect_error', (error) => {
+      console.error('Erreur de connexion:', error);
       showError('Erreur de connexion au serveur');
-      console.error('Erreur Socket.IO:', error);
     });
 
-    socket.on('error', (data) => {
-      showError(data.message);
-      if (data.message.includes('introuvable') || data.message.includes('pleine')) {
-        setTimeout(() => window.location.href = '/', 2000);
-      }
-    });
-
-    socket.emit('joinGame', { gameId, playerId, username });
     setupSocketListeners();
   }
 });
