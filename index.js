@@ -19,7 +19,7 @@ const io = new Server(server, {
 // Middleware
 app.use(cors());
 app.use(express.json());
-app.use(express.static(path.join(__dirname, '../frontend')));
+app.use(express.static(path.join(__dirname, 'frontend')));
 
 // Headers de sécurité
 app.use((req, res, next) => {
@@ -346,15 +346,15 @@ function endGame(gameId) {
 
 // Routes pour les pages HTML
 app.get('/', (req, res) => {
-  res.sendFile(path.join(__dirname, '../frontend/index.html'));
+  res.sendFile(path.join(__dirname, '/frontend/index.html'));
 });
 
 app.get('/game.html', (req, res) => {
-  res.sendFile(path.join(__dirname, '../frontend/game.html'));
+  res.sendFile(path.join(__dirname, '/frontend/game.html'));
 });
 
 app.get('/join-game.html', (req, res) => {
-  res.sendFile(path.join(__dirname, '../frontend/join-game.html'));
+  res.sendFile(path.join(__dirname, '/frontend/join-game.html'));
 });
 
 // Route de debug
