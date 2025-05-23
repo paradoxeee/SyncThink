@@ -55,7 +55,7 @@ async function handleCreateGame(e) {
     const controller = new AbortController();
     const timeoutId = setTimeout(() => controller.abort(), 10000); // 10s timeout
 
-    const response = await fetch("http://localhost:10000/api/create-game", {
+    const response = await fetch("https://syncthink.onrender.com/api/create-game", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       signal: controller.signal
@@ -124,7 +124,7 @@ async function handleJoinGame() {
     const timeoutId = setTimeout(() => controller.abort(), 10000); // 10s timeout
 
     const response = await fetch(
-      `http://localhost:10000/api/join-game/${encodeURIComponent(gameId)}`, 
+      `https://syncthink.onrender.com/api/join-game/${encodeURIComponent(gameId)}`, 
       { 
         method: "POST",
         signal: controller.signal
