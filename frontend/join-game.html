@@ -33,17 +33,41 @@
       font-size: 2.5rem;
     }
     
-    #gameIdInput {
+    .join-form {
+      display: flex;
+      flex-direction: column;
+      gap: 1rem;
+    }
+
+    .input-group {
+      display: flex;
+      flex-direction: column;
+      gap: 0.5rem;
+      text-align: left;
+    }
+
+    .input-group label {
+      font-weight: bold;
+      color: var(--dark-text);
+      font-size: 1.1rem;
+    }
+
+    .input-group input {
       width: 100%;
       padding: 15px;
-      margin-bottom: 1.5rem;
       border: 2px solid black;
       border-radius: 8px;
       font-size: 1.2rem;
-      text-align: center;
+      transition: all 0.3s ease;
     }
-    
-    #submitJoin {
+
+    .input-group input:focus {
+      outline: none;
+      border-color: var(--purple);
+      box-shadow: 0 0 0 3px rgba(147, 112, 219, 0.2);
+    }
+
+    #join-btn {
       background-color: var(--purple);
       color: black;
       border: 2px solid black;
@@ -54,11 +78,18 @@
       cursor: pointer;
       transition: all 0.3s ease;
       width: 100%;
+      margin-top: 1rem;
     }
-    
-    #submitJoin:hover {
+
+    #join-btn:hover {
       transform: translateY(-3px);
       box-shadow: 0 5px 15px rgba(0, 0, 0, 0.2);
+    }
+
+    #join-btn:disabled {
+      opacity: 0.7;
+      cursor: not-allowed;
+      transform: none;
     }
 
     /* Styles pour les toasts */
@@ -93,8 +124,14 @@
   <div class="join-container">
     <h1>JOIN A GAME</h1>
     <div class="join-form">
-      <input type="text" id="game-id" placeholder="Entrez l'ID de la partie" required>
-      <input type="text" id="username" placeholder="Entrez votre pseudo" required>
+      <div class="input-group">
+        <label for="game-id">ID de la partie</label>
+        <input type="text" id="game-id" placeholder="Entrez l'ID de la partie" required>
+      </div>
+      <div class="input-group">
+        <label for="username">Votre pseudo</label>
+        <input type="text" id="username" placeholder="Entrez votre pseudo" required>
+      </div>
       <button id="join-btn">Rejoindre la partie</button>
     </div>
   </div>

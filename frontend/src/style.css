@@ -185,6 +185,9 @@ body {
   position: relative;
   left: -10%;
 }
+a {
+  text-decoration: none;
+}
 
 /* ================ HOW TO PLAY SECTION ================ */
 .section-howto {

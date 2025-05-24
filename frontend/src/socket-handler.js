@@ -56,44 +56,60 @@ class SocketHandler {
     this.socket.on('gameUpdate', (data) => {
       if (window.gameUI) {
         window.gameUI.updatePlayersUI(data.players);
-        window.gameUI.showGameState(data.status);
+        window.gameUI.showGameState(data.status, data);
       }
     });
 
     // Démarrage du jeu
     this.socket.on('gameStarted', (data) => {
       if (window.gameUI) {
-        window.gameUI.showGameState('playing');
+        window.gameUI.showGameState('playing', data);
       }
     });
 
     // Nouveau round
     this.socket.on('newRound', (data) => {
       if (window.gameUI) {
-        window.gameUI.showQuestion(data.question, data.round, data.maxRounds);
+        window.gameUI.showQuestion(data);
       }
     });
 
     // Mise à jour du timer
     this.socket.on('timerUpdate', (data) => {
       if (window.gameUI) {
-        window.gameUI.updateTimer(data.timeLeft);
+        window.gameUI.updateTimer(data);
       }
     });
 
     // Résultats du round
     this.socket.on('roundResults', (data) => {
+      console.log('Round results received:', data);
       if (window.gameUI) {
+        // S'assurer que les données sont complètes
+        if (!data.players) {
+          console.error('Missing players data in round results');
+          return;
+        }
         window.gameUI.showRoundResults(data);
       }
     });
 
     // Fin de partie
     this.socket.on('gameOver', (data) => {
+      console.log('GameOver event received with data:', data);
       if (window.gameUI) {
-        window.gameUI.showGameState('finished');
-        window.gameUI.showRoundResults(data);
+        // S'assurer que les données sont complètes
+        if (!data.finalResults) {
+          console.error('Missing final results data');
+          return;
+        }
+        window.gameUI.showGameState('finished', data);
       }
+    });
+
+    // Événement quand tous les joueurs ont répondu
+    this.socket.on('allPlayersAnswered', () => {
+      console.log('All players have answered');
     });
   }
 
@@ -115,6 +131,16 @@ class SocketHandler {
       gameId: this.gameId,
       playerId: this.playerId,
       answer
+    });
+  }
+
+  // Émettre l'événement allPlayersAnswered
+  emitAllPlayersAnswered() {
+    if (!this.socket || !this.isConnected) return;
+    
+    this.socket.emit('allPlayersAnswered', {
+      gameId: this.gameId,
+      playerId: this.playerId
     });
   }
 

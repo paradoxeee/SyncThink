@@ -1,0 +1,393 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Résultats - Syncthink</title>
+    <link rel="stylesheet" href="src/style.css">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/gsap.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/ScrollTrigger.min.js"></script>
+    <style>
+        .results-page {
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            padding: 2rem;
+            background: linear-gradient(135deg, var(--background) 0%, #1a1a2e 100%);
+            color: var(--text);
+            overflow-x: hidden;
+        }
+
+        .results-container {
+            max-width: 800px;
+            width: 100%;
+            background: rgba(255, 255, 255, 0.08);
+            border-radius: 20px;
+            padding: 2.5rem;
+            margin-top: 2rem;
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.2);
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            opacity: 0;
+            transform: translateY(30px);
+        }
+
+        .game-over-title {
+            font-size: 3.5rem;
+            margin-bottom: 1.5rem;
+            text-align: center;
+            color: var(--purple);
+            text-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+            font-weight: 800;
+            opacity: 0;
+            transform: translateY(-20px);
+        }
+
+        .winner-section {
+            text-align: center;
+            margin: 2rem 0;
+            padding: 2.5rem;
+            background: rgba(76, 175, 80, 0.15);
+            border-radius: 15px;
+            border: 1px solid rgba(76, 175, 80, 0.3);
+            box-shadow: 0 4px 15px rgba(76, 175, 80, 0.1);
+            opacity: 0;
+            transform: scale(0.9);
+        }
+
+        .winner-message {
+            font-size: 2.2rem;
+            color: #4CAF50;
+            margin-bottom: 1rem;
+            font-weight: 700;
+            text-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+        }
+
+        .questions-summary {
+            margin: 2rem 0;
+            opacity: 0;
+        }
+
+        .round-summary {
+            background: rgba(255, 255, 255, 0.08);
+            border-radius: 12px;
+            padding: 1.5rem;
+            margin-bottom: 1.5rem;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            transform: translateX(-50px);
+            opacity: 0;
+        }
+
+        .round-question {
+            font-weight: bold;
+            color: var(--purple);
+            margin-bottom: 1rem;
+            font-size: 1.3rem;
+            text-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+        }
+
+        .player-answer {
+            margin: 0.8rem 0;
+            padding: 1rem;
+            border-radius: 8px;
+            background: rgba(255, 255, 255, 0.05);
+            transform: translateX(-20px);
+            opacity: 0;
+        }
+
+        .player-answer.your-answer {
+            background: rgba(76, 175, 80, 0.2);
+            border: 1px solid rgba(76, 175, 80, 0.3);
+        }
+
+        .players-ranking {
+            margin: 2rem 0;
+            opacity: 0;
+        }
+
+        .player-result {
+            display: flex;
+            align-items: center;
+            padding: 1.2rem;
+            margin: 0.8rem 0;
+            background: rgba(255, 255, 255, 0.08);
+            border-radius: 12px;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            transform: translateX(-30px);
+            opacity: 0;
+        }
+
+        .player-result.current-player {
+            background: rgba(76, 175, 80, 0.2);
+            border: 1px solid rgba(76, 175, 80, 0.3);
+        }
+
+        .rank {
+            font-size: 2rem;
+            font-weight: bold;
+            margin-right: 1.5rem;
+            color: var(--purple);
+            text-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+        }
+
+        .name {
+            flex: 1;
+            font-size: 1.3rem;
+        }
+
+        .score {
+            font-weight: bold;
+            color: var(--purple);
+            font-size: 1.3rem;
+            padding: 0.5rem 1rem;
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 8px;
+        }
+
+        .action-buttons {
+            display: flex;
+            gap: 1.5rem;
+            margin-top: 2.5rem;
+            justify-content: center;
+            opacity: 0;
+            transform: translateY(20px);
+        }
+
+        .action-button {
+            padding: 1.2rem 2.5rem;
+            font-size: 1.3rem;
+            border: none;
+            border-radius: 12px;
+            cursor: pointer;
+            transition: all 0.3s;
+            font-weight: bold;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .play-again {
+            background: var(--purple);
+            color: white;
+            box-shadow: 0 4px 15px rgba(var(--purple-rgb), 0.3);
+        }
+
+        .back-to-menu {
+            background: rgba(255, 255, 255, 0.1);
+            color: var(--text);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+        }
+
+        .action-button::after {
+            content: '';
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            width: 0;
+            height: 0;
+            background: rgba(255, 255, 255, 0.2);
+            border-radius: 50%;
+            transform: translate(-50%, -50%);
+            transition: width 0.6s, height 0.6s;
+        }
+
+        .action-button:hover::after {
+            width: 300px;
+            height: 300px;
+        }
+
+        @media (max-width: 768px) {
+            .results-container {
+                padding: 1.5rem;
+                margin: 1rem;
+            }
+
+            .game-over-title {
+                font-size: 2.5rem;
+            }
+
+            .winner-message {
+                font-size: 1.8rem;
+            }
+
+            .action-buttons {
+                flex-direction: column;
+            }
+
+            .action-button {
+                width: 100%;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="results-page">
+        <div class="results-container">
+            <h1 class="game-over-title">Partie Terminée !</h1>
+            <div id="winner-section" class="winner-section">
+                <!-- Le contenu sera injecté par JavaScript -->
+            </div>
+            <div id="questions-summary" class="questions-summary">
+                <!-- Le contenu sera injecté par JavaScript -->
+            </div>
+            <div id="players-ranking" class="players-ranking">
+                <!-- Le contenu sera injecté par JavaScript -->
+            </div>
+            <div class="action-buttons">
+                <button class="action-button back-to-menu" onclick="backToMenu()">Retour au menu</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Récupérer les données des résultats depuis le localStorage
+        const gameResults = JSON.parse(localStorage.getItem('gameResults'));
+        const playerId = localStorage.getItem('playerId');
+
+        function displayResults() {
+            if (!gameResults) {
+                window.location.href = '/';
+                return;
+            }
+
+            // Afficher les félicitations et les scores
+            const winnerSection = document.getElementById('winner-section');
+            const players = gameResults.players;
+            
+            winnerSection.innerHTML = `
+                <div class="winner-message">
+                    Félicitations ${players.map(p => p.username).join(' et ')} !
+                </div>
+                <div class="final-scores">
+                    ${players.map(p => `
+                        <div class="player-score ${p.id === playerId ? 'your-score' : ''}">
+                            ${p.username}: ${p.score} points
+                        </div>
+                    `).join('')}
+                </div>
+            `;
+
+            // Afficher le résumé des questions
+            const questionsSummary = document.getElementById('questions-summary');
+            const roundResults = gameResults.roundResults || {};
+            
+            questionsSummary.innerHTML = `
+                <h2>Résumé de la partie</h2>
+                ${Object.entries(roundResults).sort(([a], [b]) => parseInt(a) - parseInt(b)).map(([round, data]) => `
+                    <div class="round-summary">
+                        <div class="round-question">Round ${round}: ${data.question}</div>
+                        <div class="answers-container">
+                            ${Object.entries(data.answers || {}).map(([answerPlayerId, answer]) => {
+                                const player = players.find(p => p.id === answerPlayerId);
+                                return `
+                                    <div class="player-answer ${answerPlayerId === playerId ? 'your-answer' : ''}">
+                                        <strong>${player ? player.username : 'Joueur inconnu'}:</strong> "${answer}"
+                                    </div>
+                                `;
+                            }).join('')}
+                        </div>
+                        <div class="round-result ${data.match ? 'success' : 'fail'}">
+                            ${data.match ? '🎉 Synchronisation !' : '❌ Pas de match'}
+                        </div>
+                    </div>
+                `).join('')}
+            `;
+
+            // Afficher le classement des joueurs
+            const playersRanking = document.getElementById('players-ranking');
+            const sortedPlayers = [...players].sort((a, b) => b.score - a.score);
+            
+            playersRanking.innerHTML = `
+                <h2>Classement final</h2>
+                ${sortedPlayers.map((player, index) => `
+                    <div class="player-result ${player.id === playerId ? 'current-player' : ''}">
+                        <div class="rank">#${index + 1}</div>
+                        <div class="name">${player.username}</div>
+                        <div class="score">${player.score} pts</div>
+                    </div>
+                `).join('')}
+            `;
+
+            // Animer les éléments
+            animateResults();
+        }
+
+        function animateResults() {
+            gsap.to('.results-container', {
+                opacity: 1,
+                y: 0,
+                duration: 1,
+                ease: 'power3.out'
+            });
+
+            gsap.to('.game-over-title', {
+                opacity: 1,
+                y: 0,
+                duration: 1,
+                delay: 0.3,
+                ease: 'power3.out'
+            });
+
+            gsap.to('.winner-section', {
+                opacity: 1,
+                scale: 1,
+                duration: 1,
+                delay: 0.6,
+                ease: 'elastic.out(1, 0.5)'
+            });
+
+            gsap.to('.questions-summary', {
+                opacity: 1,
+                duration: 1,
+                delay: 0.9
+            });
+
+            gsap.to('.round-summary', {
+                opacity: 1,
+                x: 0,
+                duration: 0.8,
+                stagger: 0.2,
+                delay: 1.2
+            });
+
+            gsap.to('.player-answer', {
+                opacity: 1,
+                x: 0,
+                duration: 0.6,
+                stagger: 0.1,
+                delay: 1.4
+            });
+
+            gsap.to('.players-ranking', {
+                opacity: 1,
+                duration: 1,
+                delay: 1.6
+            });
+
+            gsap.to('.player-result', {
+                opacity: 1,
+                x: 0,
+                duration: 0.8,
+                stagger: 0.2,
+                delay: 1.8
+            });
+
+            gsap.to('.action-buttons', {
+                opacity: 1,
+                y: 0,
+                duration: 1,
+                delay: 2.2
+            });
+        }
+
+        function backToMenu() {
+            window.location.href = '/';
+        }
+
+        // Afficher les résultats au chargement de la page
+        displayResults();
+    </script>
+</body>
+</html> 

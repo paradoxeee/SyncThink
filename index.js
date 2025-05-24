@@ -50,9 +50,39 @@ const questions = [
 app.post("/api/games", (req, res) => {
   const gameId = uuidv4().slice(0, 8).toUpperCase();
   const adminToken = uuidv4();
-  const { username } = req.body;
+  const { username, players } = req.body;
 
-  // Créer le premier joueur (admin)
+  // Si des joueurs existants sont fournis, les utiliser
+  if (players && Array.isArray(players)) {
+    games[gameId] = {
+      id: gameId,
+      players: players.map(p => ({
+        ...p,
+        score: 0,
+        isAdmin: false,
+        hasAnswered: false,
+        answer: null
+      })),
+      status: 'waiting',
+      createdAt: Date.now(),
+      adminToken,
+      currentRound: 0,
+      maxRounds: 2,
+      usedQuestions: []
+    };
+
+    // Définir le premier joueur comme admin
+    games[gameId].players[0].isAdmin = true;
+
+    res.status(201).json({ 
+      gameId, 
+      playerId: players[0].id, 
+      adminToken 
+    });
+    return;
+  }
+
+  // Sinon, créer un nouveau joueur (comportement par défaut)
   const playerId = uuidv4();
   const player = {
     id: playerId,
@@ -68,7 +98,7 @@ app.post("/api/games", (req, res) => {
     createdAt: Date.now(),
     adminToken,
     currentRound: 0,
-    maxRounds: 5,
+    maxRounds: 2,
     usedQuestions: []
   };
 
@@ -173,12 +203,20 @@ io.on("connection", (socket) => {
 // Fonctions de jeu
 function startGame(gameId) {
   const game = games[gameId];
+  if (!game) return;
+  
   game.status = 'playing';
   game.currentRound = 1;
+  game.players.forEach(p => {
+    p.score = 0;
+    p.hasAnswered = false;
+    p.answer = null;
+  });
 
   io.to(gameId).emit("gameStarted", {
     round: game.currentRound,
-    maxRounds: game.maxRounds
+    maxRounds: game.maxRounds,
+    players: game.players
   });
 
   startRound(gameId);
@@ -186,15 +224,21 @@ function startGame(gameId) {
 
 function startRound(gameId) {
   const game = games[gameId];
-  const question = getRandomQuestion(game);
+  if (!game) return;
   
+  const question = getRandomQuestion(game);
   game.currentQuestion = question;
-  game.players.forEach(p => p.hasAnswered = false);
+  game.players.forEach(p => {
+    p.hasAnswered = false;
+    p.answer = null;
+  });
 
   io.to(gameId).emit("newRound", {
     question,
     round: game.currentRound,
-    timeLimit: 30
+    maxRounds: game.maxRounds,
+    timeLimit: 30,
+    players: game.players
   });
 
   startTimer(gameId);
@@ -208,38 +252,37 @@ function calculateResults(gameId) {
   const scores = {};
   let match = false;
 
-  // Collect all answers
+  // Filtrer les joueurs qui ont répondu
+  const playersAnswered = game.players.filter(p => p.answer && p.answer.trim());
+  
+  // Vérifier si au moins 2 joueurs ont répondu et si toutes les réponses sont identiques
+  if (playersAnswered.length >= 2) {
+    const firstAnswer = playersAnswered[0].answer.toLowerCase().trim();
+    match = playersAnswered.every(p => p.answer.toLowerCase().trim() === firstAnswer);
+    
+    if (match) {
+      game.players.forEach(player => {
+        player.score += 10;
+        scores[player.id] = player.score;
+      });
+    }
+  }
+
+  // Récupérer toutes les réponses (même vides)
   game.players.forEach(player => {
     answers[player.id] = player.answer;
     scores[player.id] = player.score;
   });
 
-  // Check if all answers match
-  const answerValues = Object.values(answers).filter(a => a); // Filter out undefined/null
-  if (answerValues.length > 1 && answerValues.every(a => a.toLowerCase().trim() === answerValues[0].toLowerCase().trim())) {
-    match = true;
-    // Award points to all players
-    game.players.forEach(player => {
-      player.score += 1;
-      scores[player.id] = player.score;
-    });
-  }
-
-  // Emit results to all players
-  game.players.forEach(player => {
-    if (player.socketId) {
-      io.to(player.socketId).emit('roundResults', {
-        match,
-        answers,
-        scores
-      });
-    }
-  });
-
-  // Reset answers for next round
-  game.players.forEach(player => {
-    player.answer = null;
-    player.hasAnswered = false;
+  // Envoyer les résultats
+  io.to(gameId).emit('roundResults', {
+    match,
+    answers,
+    scores,
+    round: game.currentRound,
+    maxRounds: game.maxRounds,
+    players: game.players,
+    question: game.currentQuestion // Ajout de la question courante
   });
 
   // Passer au round suivant ou terminer
@@ -250,16 +293,31 @@ function calculateResults(gameId) {
     endGame(gameId);
   }
 }
-
 function endGame(gameId) {
   const game = games[gameId];
-  game.status = 'finished';
+  if (!game) return;
   
-  const winner = [...game.players].sort((a, b) => b.score - a.score)[0];
+  game.status = 'finished';
+  const sortedPlayers = [...game.players].sort((a, b) => b.score - a.score);
+  const winner = sortedPlayers[0];
   
   io.to(gameId).emit("gameOver", {
     winner: winner.id,
-    scores: game.players.map(p => ({ id: p.id, score: p.score }))
+    scores: game.players.map(p => ({ id: p.id, score: p.score })),
+    players: game.players,
+    finalResults: {
+      winner: winner,
+      players: sortedPlayers,
+      questions: game.usedQuestions, // Toutes les questions posées
+      answers: game.players.map(p => ({ // Réponses par round
+        id: p.id, 
+        username: p.username, 
+        answers: game.usedQuestions.map((q, i) => ({
+          question: q,
+          answer: p.answers ? p.answers[i] : null
+        }))
+      }))
+    }
   });
 
   // Nettoyer après délai
@@ -277,11 +335,16 @@ function getRandomQuestion(game) {
 function startTimer(gameId) {
   let timeLeft = 30;
   const game = games[gameId];
+  if (!game) return;
   
   const timer = setInterval(() => {
     timeLeft--;
     
-    io.to(gameId).emit("timerUpdate", { timeLeft });
+    io.to(gameId).emit("timerUpdate", { 
+      timeLeft,
+      round: game.currentRound,
+      maxRounds: game.maxRounds
+    });
     
     if (timeLeft <= 0 || game.players.every(p => p.hasAnswered)) {
       clearInterval(timer);
