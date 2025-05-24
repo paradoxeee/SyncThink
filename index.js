@@ -53,7 +53,46 @@ const questions = [
   "Quel est ton livre préféré ?",
   "Quel est ton sport préféré ?",
   "Quel est ton pays préféré ?",
-  "Quel est ton instrument de musique préféré ?"
+  "Quel est ton instrument de musique préféré ?",
+  "Si tu étais une saison, laquelle serais-tu ?",
+"Si tu pouvais parler à un animal, lequel choisirais-tu ?",
+"Si tu étais un personnage de dessin animé, lequel serais-tu ?",
+"Quelle est ta chanson du moment ?",
+"Si tu pouvais avoir un métier de rêve, ce serait quoi ?",
+"Quel est ton dessert préféré ?",
+"Quel est le premier mot qui te vient en tête ?",
+"Si tu étais une couleur, laquelle serais-tu ?",
+"Si tu pouvais vivre dans un film, ce serait lequel ?",
+"Quel est ton plus grand rêve ?",
+"Quelle appli utilises-tu le plus ?",
+"Si tu étais une boisson, laquelle serais-tu ?",
+"Quelle est la dernière chose qui t’a fait rire ?",
+"Quel est ton talent caché ?",
+"Si tu pouvais avoir un animal imaginaire, lequel ce serait ?",
+"Quel est ton emoji préféré ?",
+"Si tu pouvais dîner avec une célébrité, ce serait qui ?",
+"Quel est le dernier truc que tu as regardé en boucle ?",
+"Plutôt montagne ou mer ?",
+"Plutôt matin ou soir ?",
+"Quel est ton péché mignon ?",
+"Si tu pouvais maîtriser un art (chant, danse, peinture…), tu choisirais quoi ?",
+"Si tu étais un objet, tu serais quoi ?",
+"Quelle odeur préfères-tu ?",
+"Si tu pouvais téléporter, tu irais où en premier ?",
+"Quel est ton meilleur souvenir d’enfance ?",
+"Quelle est ta fête préférée ?",
+"Si tu pouvais changer ton prénom, tu prendrais lequel ?",
+"Quel est le son que tu trouves le plus agréable ?",
+"Si tu devais manger le même plat toute ta vie, ce serait lequel ?",
+"Si tu étais un personnage de jeu vidéo, qui serais-tu ?",
+"Si tu pouvais maîtriser une langue instantanément, laquelle choisirais-tu ?",
+"Quel est ton mot préféré en français ?",
+"Si tu étais un style musical, ce serait lequel ?",
+"Quel animal te représente le mieux ?",
+"Si tu pouvais remonter le temps, à quelle époque irais-tu ?",
+"Quel est le truc le plus fou que tu aimerais faire un jour ?",
+"Si tu étais une émotion, laquelle serais-tu ?"
+
 ];
 
 // Routes API
@@ -108,7 +147,7 @@ app.post("/api/games", (req, res) => {
     createdAt: Date.now(),
     adminToken,
     currentRound: 0,
-    maxRounds: 2,
+    maxRounds: 10,
     usedQuestions: []
   };
 
