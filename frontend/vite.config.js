@@ -16,13 +16,20 @@ export default defineConfig({
     }
   },
   build: {
+    outDir: 'dist',
+    assetsDir: 'assets',
     rollupOptions: {
-      external: ['gsap'],
-      output: {
-        globals: {
-          gsap: 'gsap'
-        }
+      input: {
+        main: 'index.html',
+        game: 'game.html',
+        'join-game': 'join-game.html',
+        results: 'results.html'
       }
+    }
+  },
+  resolve: {
+    alias: {
+      '@': '/src'
     }
   }
 }); 

@@ -22,7 +22,16 @@ app.use(cors({
   credentials: true
 }));
 app.use(express.json());
-app.use(express.static(path.join(__dirname, 'frontend')));
+
+// Servir les fichiers statiques du frontend
+app.use(express.static(path.join(__dirname, 'frontend/dist')));
+app.use('/src', express.static(path.join(__dirname, 'frontend/src')));
+app.use('/public', express.static(path.join(__dirname, 'frontend/public')));
+
+// Route par défaut pour servir index.html
+app.get('*', (req, res) => {
+  res.sendFile(path.join(__dirname, 'frontend/dist/index.html'));
+});
 
 // Socket.IO Setup
 const io = new Server(server, {

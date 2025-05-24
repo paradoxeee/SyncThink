@@ -1,8 +1,9 @@
 // Fichier main.js - Animations GSAP pour SyncThink
 
-import { gsap } from 'gsap';
-import { ScrollTrigger } from 'gsap/ScrollTrigger';
-import { ScrollToPlugin } from 'gsap/ScrollToPlugin';
+// Importer GSAP depuis le CDN
+const gsap = window.gsap;
+const ScrollTrigger = window.ScrollTrigger;
+const ScrollToPlugin = window.ScrollToPlugin;
 
 // Enregistrer les plugins
 gsap.registerPlugin(ScrollTrigger, ScrollToPlugin);
