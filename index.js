@@ -374,12 +374,28 @@ function endGame(gameId) {
 }
 
 // Helpers
+function shuffle(array) {
+  return array
+    .map(value => ({ value, sort: Math.random() }))
+    .sort((a, b) => a.sort - b.sort)
+    .map(({ value }) => value);
+}
+
+function initializeGame(game) {
+  game.shuffledQuestions = shuffle([...questions]);
+  game.questionIndex = 0;
+}
+
 function getRandomQuestion(game) {
-  const availableQuestions = questions.filter(q => !game.usedQuestions?.includes(q));
-  const question = availableQuestions[Math.floor(Math.random() * availableQuestions.length)];
-  game.usedQuestions.push(question);
+  if (game.questionIndex >= game.shuffledQuestions.length) {
+    game.shuffledQuestions = shuffle([...questions]);
+    game.questionIndex = 0;
+  }
+  const question = game.shuffledQuestions[game.questionIndex];
+  game.questionIndex++;
   return question;
 }
+
 
 function startTimer(gameId) {
   let timeLeft = 30;
