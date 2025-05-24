@@ -7,7 +7,9 @@
     "start": "node index.js",
     "dev:backend": "nodemon index.js",
     "dev:frontend": "cd frontend && vite",
-    "dev": "concurrently \"npm run dev:backend\" \"npm run dev:frontend\""
+    "dev": "concurrently \"npm run dev:backend\" \"npm run dev:frontend\"",
+    "build": "cd frontend && npm install && npm run build",
+    "postinstall": "cd frontend && npm install"
   },
   "keywords": [],
   "author": "",

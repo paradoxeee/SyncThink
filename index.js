@@ -12,7 +12,8 @@ const server = http.createServer(app);
 const PORT = process.env.PORT || 3000;
 const allowedOrigins = process.env.ALLOWED_ORIGINS || [
   'http://localhost:5173',
-  'https://votre-domaine.com'
+  'https://votre-domaine.com',
+  'https://*.onrender.com'  // Pour accepter les domaines Render
 ];
 
 // Middleware
