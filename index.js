@@ -77,7 +77,7 @@ app.post("/api/games", (req, res) => {
       createdAt: Date.now(),
       adminToken,
       currentRound: 0,
-      maxRounds: 2,
+      maxRounds: 10,
       usedQuestions: []
     };
 
