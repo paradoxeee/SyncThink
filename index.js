@@ -66,7 +66,7 @@ const questions = [
 "Quel est ton plus grand rêve ?",
 "Quelle appli utilises-tu le plus ?",
 "Si tu étais une boisson, laquelle serais-tu ?",
-"Quelle est la dernière chose qui t’a fait rire ?",
+"Quelle est la dernière chose qui t'a fait rire ?",
 "Quel est ton talent caché ?",
 "Si tu pouvais avoir un animal imaginaire, lequel ce serait ?",
 "Quel est ton emoji préféré ?",
@@ -79,7 +79,7 @@ const questions = [
 "Si tu étais un objet, tu serais quoi ?",
 "Quelle odeur préfères-tu ?",
 "Si tu pouvais téléporter, tu irais où en premier ?",
-"Quel est ton meilleur souvenir d’enfance ?",
+"Quel est ton meilleur souvenir d'enfance ?",
 "Quelle est ta fête préférée ?",
 "Si tu pouvais changer ton prénom, tu prendrais lequel ?",
 "Quel est le son que tu trouves le plus agréable ?",
@@ -117,7 +117,9 @@ app.post("/api/games", (req, res) => {
       adminToken,
       currentRound: 0,
       maxRounds: 10,
-      usedQuestions: []
+      usedQuestions: [],
+      shuffledQuestions: shuffle([...questions]),
+      questionIndex: 0
     };
 
     // Définir le premier joueur comme admin
@@ -148,7 +150,9 @@ app.post("/api/games", (req, res) => {
     adminToken,
     currentRound: 0,
     maxRounds: 10,
-    usedQuestions: []
+    usedQuestions: [],
+    shuffledQuestions: shuffle([...questions]),
+    questionIndex: 0
   };
 
   res.status(201).json({ gameId, playerId, adminToken });
@@ -381,21 +385,17 @@ function shuffle(array) {
     .map(({ value }) => value);
 }
 
-function initializeGame(game) {
-  game.shuffledQuestions = shuffle([...questions]);
-  game.questionIndex = 0;
-}
-
 function getRandomQuestion(game) {
-  if (game.questionIndex >= game.shuffledQuestions.length) {
+  if (!game.shuffledQuestions || game.questionIndex >= game.shuffledQuestions.length) {
     game.shuffledQuestions = shuffle([...questions]);
     game.questionIndex = 0;
   }
+  
   const question = game.shuffledQuestions[game.questionIndex];
   game.questionIndex++;
+  game.usedQuestions.push(question);
   return question;
 }
-
 
 function startTimer(gameId) {
   let timeLeft = 30;
