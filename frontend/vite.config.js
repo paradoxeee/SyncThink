@@ -14,5 +14,15 @@ export default defineConfig({
         ws: true
       }
     }
+  },
+  build: {
+    rollupOptions: {
+      external: ['gsap'],
+      output: {
+        globals: {
+          gsap: 'gsap'
+        }
+      }
+    }
   }
 }); 
